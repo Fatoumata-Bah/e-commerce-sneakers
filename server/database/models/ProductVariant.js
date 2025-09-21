@@ -55,9 +55,11 @@ module.exports = (sequelize) => {
     indexes: [
       {
         unique: true,
-        fields: ['product_id', 'size', 'size_type']
+        fields: ['product_id', 'size', 'size_type'],
+        name: 'product_variant_unique'
       },
       {
+        unique: true,
         fields: ['sku']
       }
     ],
