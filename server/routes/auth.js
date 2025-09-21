@@ -1,17 +1,16 @@
 const express = require('express');
 const router = express.Router();
 
-// Routes d'authentification (à implémenter)
 router.post('/register', (req, res) => {
-  res.json({ message: 'Register route - à implémenter' });
+  res.json({ message: 'Register' });
 });
 
 router.post('/login', (req, res) => {
-  res.json({ message: 'Login route - à implémenter' });
+  res.json({ message: 'Login' });
 });
 
 router.post('/logout', (req, res) => {
-  res.json({ message: 'Logout route - à implémenter' });
+  res.json({ message: 'Logout' });
 });
 
 module.exports = router;
