@@ -25,15 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    environment: config.nodeEnv 
-  });
-});
-
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'API running' });
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
 app.use('/api', require('./routes'));

@@ -51,6 +51,20 @@ module.exports = (sequelize) => {
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true
+    },
+    
+    // Informations spécifiques aux sellers
+    sellerInfo: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: null,
+      validate: {
+        isSellerInfoValid(value) {
+          if (this.role === 'seller' && (!value || !value.businessName)) {
+            throw new Error('Business name is required for sellers');
+          }
+        }
+      }
     }
     
   }, {
