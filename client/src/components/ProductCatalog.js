@@ -28,6 +28,7 @@ const ProductCatalog = () => {
   // Utilisation du contexte des filtres
   const {
     searchTerm,
+    debouncedSearchTerm, // Utiliser la version debouncée pour les requêtes
     categoryFilter,
     brandFilter,
     sizeFilter,
@@ -74,19 +75,19 @@ const ProductCatalog = () => {
     const filters = {};
     if (categoryFilter !== 'all') filters.category = categoryFilter;
     if (brandFilter !== 'all') filters.brand = brandFilter;
-    if (searchTerm) filters.search = searchTerm;
+    if (debouncedSearchTerm) filters.search = debouncedSearchTerm; // Utiliser la version debouncée
     if (sortBy) filters.sortBy = sortBy;
     
     resetPagination(); // Reset à la page 1 quand les filtres changent
     fetchProducts(1, filters);
-  }, [categoryFilter, brandFilter, searchTerm, sortBy, fetchProducts, resetPagination]);
+  }, [categoryFilter, brandFilter, debouncedSearchTerm, sortBy, fetchProducts, resetPagination]); // Utiliser debouncedSearchTerm
 
   // Gestionnaire de changement de page
   const handlePageChange = (event, page) => {
     const filters = {};
     if (categoryFilter !== 'all') filters.category = categoryFilter;
     if (brandFilter !== 'all') filters.brand = brandFilter;
-    if (searchTerm) filters.search = searchTerm;
+    if (debouncedSearchTerm) filters.search = debouncedSearchTerm; // Utiliser la version debouncée
     if (sortBy) filters.sortBy = sortBy;
     
     fetchProducts(page, filters);

@@ -176,7 +176,6 @@ router.post('/', authenticateToken, async (req, res) => {
       await item.ProductVariant.update({
         stock: newStock
       }, { transaction });
-      console.log(`📦 Stock déduit: ${item.ProductVariant.Product.name} ${item.ProductVariant.size}${item.ProductVariant.sizeType} - Quantité: ${item.quantity}, Nouveau stock: ${newStock}`);
     }
     
     await CartItem.destroy({ where: { userId: req.user.id }, transaction });
@@ -331,7 +330,6 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
         await orderItem.ProductVariant.update({
           stock: orderItem.ProductVariant.stock + orderItem.quantity
         });
-        console.log(`🔄 Stock restauré: ${orderItem.ProductVariant.Product.name} ${orderItem.ProductVariant.size}${orderItem.ProductVariant.sizeType} - Quantité: ${orderItem.quantity}, Nouveau stock: ${orderItem.ProductVariant.stock + orderItem.quantity}`);
       }
     }
 

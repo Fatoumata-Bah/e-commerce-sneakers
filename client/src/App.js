@@ -3,7 +3,7 @@ import { ThemeProvider, createTheme, CssBaseline, Container, Typography, Box, To
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 import { NotificationProvider } from './contexts/NotificationContext';
-import { FiltersProvider } from './contexts/FiltersContext';
+import { FiltersProvider, useFilters } from './contexts/FiltersContext';
 import { CartTimerProvider } from './contexts/CartTimerContext';
 import AuthFiltersSync from './components/AuthFiltersSync';
 import Header from './components/Header';
@@ -173,6 +173,7 @@ const theme = createTheme({
 const AppContent = () => {
   const [currentView, setCurrentView] = useState('products');
   const { user } = useAuth();
+  const { setCategoryFilter } = useFilters();
 
   // Fonction de navigation qui nettoie automatiquement les hash
   const navigateTo = (view) => {
@@ -222,7 +223,11 @@ const AppContent = () => {
         return (
           <>
             <HeroSection 
-              onShopNow={() => {
+              onShopNow={(category = null) => {
+                // Si une catégorie est spécifiée, l'appliquer au filtre
+                if (category) {
+                  setCategoryFilter(category);
+                }
                 // Scroll vers le catalogue
                 const catalogElement = document.getElementById('product-catalog');
                 if (catalogElement) {

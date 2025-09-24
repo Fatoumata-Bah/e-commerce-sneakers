@@ -12,22 +12,16 @@ export const useCartWithTimer = () => {
 
   // Wrapper pour addToCart qui prolonge automatiquement le timer
   const addToCartWithTimer = useCallback(async (...args) => {
-    console.log('🛒 addToCartWithTimer appelé avec:', args);
     try {
       // Ajouter l'article au panier
-      console.log('Ajout au panier...');
       const result = await cart.addToCart(...args);
-      console.log('Résultat addToCart:', result);
       
       if (result.success) {
         // Toujours utiliser extendOnAddItem - il gère déjà la logique d'expiration
-        console.log('Succès ! Gestion du timer dans 100ms...');
         setTimeout(() => {
-          console.log('🕐 Prolongation/démarrage du timer');
           extendOnAddItem();
         }, 100);
       } else {
-        console.log('Échec de l\'ajout au panier:', result.error);
       }
       
       return result;

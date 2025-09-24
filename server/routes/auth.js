@@ -52,8 +52,6 @@ router.post('/register', validateRegister, async (req, res) => {
 router.post('/login', validateLogin, async (req, res) => {
   try {
     const { email, password } = req.body;
-
-
     const user = await User.scope('withPassword').findOne({ where: { email } });
     if (!user || !user.isActive) {
       return res.status(401).json({ error: 'Invalid credentials' });

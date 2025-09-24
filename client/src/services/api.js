@@ -1,7 +1,10 @@
 import axios from 'axios';
 
+// Configuration de l'API - supporte les variables d'environnement
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
+
 const api = axios.create({
-  baseURL: 'http://localhost:4000/api',
+  baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' }
 });
 

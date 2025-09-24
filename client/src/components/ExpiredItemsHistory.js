@@ -78,6 +78,9 @@ const ExpiredItemsHistory = () => {
       await fetchCart();
       await loadExpiredItems(currentPage);
       
+      // Déclencher la mise à jour du compteur d'articles expirés
+      window.dispatchEvent(new CustomEvent('expiredItemsUpdated'));
+      
       // Démarrer/prolonger le timer après ajout au panier
       setTimeout(() => {
         extendOnAddItem();

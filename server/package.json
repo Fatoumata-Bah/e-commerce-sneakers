@@ -6,8 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "deploy": "node scripts/deploy-production.js",
-    "seed": "node scripts/seed-production.js"
+    "seed": "node scripts/seed-production.js",
+    "db:init": "node scripts/seed-production.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -23,5 +23,8 @@
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }

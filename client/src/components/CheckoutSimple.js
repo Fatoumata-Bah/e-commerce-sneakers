@@ -76,7 +76,6 @@ const CheckoutSimple = ({ open, onClose, onCancel, onSuccess }) => {
       const response = await orderService.create(orderData);
       const order = response.data.order;
 
-      console.log('✅ Commande validée - Arrêt du timer et libération des réservations');
       
       // Arrêter le timer car la commande est validée
       stopTimer();
@@ -84,7 +83,6 @@ const CheckoutSimple = ({ open, onClose, onCancel, onSuccess }) => {
       // Libérer les réservations (elles sont maintenant converties en commande)
       try {
         await StockReservationService.releaseAllReservations();
-        console.log('✅ Réservations libérées après commande validée');
       } catch (error) {
         console.error('❌ Erreur lors de la libération des réservations:', error);
       }
@@ -108,7 +106,6 @@ const CheckoutSimple = ({ open, onClose, onCancel, onSuccess }) => {
   };
 
   const handleCancel = () => {
-    console.log('❌ Annulation de la commande - Reprise du timer');
     
     // Reprendre le timer qui était en pause
     resumeTimer();
@@ -125,7 +122,6 @@ const CheckoutSimple = ({ open, onClose, onCancel, onSuccess }) => {
   // Mettre en pause le timer quand le checkout s'ouvre (une seule fois)
   useEffect(() => {
     if (open && cart.items.length > 0 && !reservationsExtended) {
-      console.log('⏸️ Checkout ouvert - Mise en pause du timer et prolongation des réservations');
       
       // Mettre en pause le timer du panier
       pauseTimer();
@@ -134,7 +130,6 @@ const CheckoutSimple = ({ open, onClose, onCancel, onSuccess }) => {
       cart.items.forEach(async (item) => {
         try {
           await StockReservationService.extendReservation(item.productVariantId, 5); // 5 minutes supplémentaires pour la commande
-          console.log(`✅ Réservation prolongée pour le produit ${item.productVariantId}`);
         } catch (error) {
           console.error(`❌ Erreur prolongation réservation pour ${item.productVariantId}:`, error);
         }
@@ -241,7 +236,6 @@ const CheckoutSimple = ({ open, onClose, onCancel, onSuccess }) => {
                   variant={paymentMethod === option.value ? 'contained' : 'outlined'}
                   color={paymentMethod === option.value ? 'primary' : 'inherit'}
                   onClick={() => {
-                    console.log('🔄 Changement mode de paiement:', option.value);
                     setPaymentMethod(option.value);
                   }}
                   sx={{

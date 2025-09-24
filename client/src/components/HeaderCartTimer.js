@@ -158,7 +158,7 @@ const HeaderCartTimer = () => {
           </Alert>
           
           <Typography variant="body1" sx={{ mb: 2 }}>
-            Souhaitez-vous prolonger la réservation de vos articles pour <strong>15 minutes supplémentaires</strong> ?
+            Souhaitez-vous prolonger la réservation de vos articles pour <strong>1 minute 30 supplémentaires</strong> ?
           </Typography>
           
           <Typography variant="body2" color="text.secondary">
@@ -225,7 +225,7 @@ const HeaderCartTimer = () => {
                 '&:hover': { bgcolor: 'warning.dark' }
               }}
             >
-              Prolonger de 15 min
+              Prolonger de 1m30
             </Button>
           </Box>
         </DialogActions>

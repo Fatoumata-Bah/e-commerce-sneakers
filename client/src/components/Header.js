@@ -8,11 +8,17 @@ import { useCartTimer } from '../contexts/CartTimerContext';
 import AuthDialog from './AuthDialog';
 import HeaderCartTimer from './HeaderCartTimer';
 import CartDrawer from './CartDrawer';
+import useOrdersCount from '../hooks/useOrdersCount';
+import useExpiredItemsCount from '../hooks/useExpiredItemsCount';
 
 const Header = ({ onShowOrders, onShowProducts, onShowAdmin, onShowExpiredItems, onNavigateHome }) => {
   const { user, logout, loading } = useAuth();
   const { cart } = useCart();
   const { recoverLostTimer } = useCartTimer();
+  
+  // Hooks pour les compteurs
+  const pendingOrdersCount = useOrdersCount();
+  const expiredItemsCount = useExpiredItemsCount();
   const [authOpen, setAuthOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [autoCheckout, setAutoCheckout] = useState(false);
@@ -41,7 +47,6 @@ const Header = ({ onShowOrders, onShowProducts, onShowAdmin, onShowExpiredItems,
   // Écouter l'événement pour ouvrir le panier et déclencher le checkout
   useEffect(() => {
     const handleOpenCartAndCheckout = (event) => {
-      console.log('🛒 Événement openCartAndCheckout reçu:', event.detail);
       setCartOpen(true);
       setAutoCheckout(true);
       
@@ -59,7 +64,6 @@ const Header = ({ onShowOrders, onShowProducts, onShowAdmin, onShowExpiredItems,
   // Vérifier s'il y a un checkout en attente après connexion
   useEffect(() => {
     if (user && localStorage.getItem('pendingCheckout') === 'true') {
-      console.log('🔄 Checkout en attente détecté après connexion');
       localStorage.removeItem('pendingCheckout');
       
       // Petit délai pour s'assurer que tout est initialisé
@@ -123,10 +127,14 @@ const Header = ({ onShowOrders, onShowProducts, onShowAdmin, onShowExpiredItems,
                   {user && user.role === 'customer' && (
                     <>
                       <IconButton color="inherit" onClick={onShowOrders} title="Mes commandes">
-                        <Receipt />
+                        <Badge badgeContent={pendingOrdersCount} color="warning">
+                          <Receipt />
+                        </Badge>
                       </IconButton>
                       <IconButton color="inherit" onClick={onShowExpiredItems} title="Articles expirés">
-                        <History />
+                        <Badge badgeContent={expiredItemsCount} color="error">
+                          <History />
+                        </Badge>
                       </IconButton>
                     </>
                   )}

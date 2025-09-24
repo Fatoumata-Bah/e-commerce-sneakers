@@ -71,6 +71,9 @@ const OrdersList = () => {
       setLoading(true);
       const response = await orderService.getAll();
       setOrders(response.data.orders);
+      
+      // Déclencher la mise à jour du compteur de commandes
+      window.dispatchEvent(new CustomEvent('ordersUpdated'));
     } catch (error) {
       console.error('Error fetching orders:', error);
       showNotification('Erreur lors du chargement des commandes', 'error');

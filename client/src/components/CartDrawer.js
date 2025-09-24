@@ -37,7 +37,6 @@ const CartDrawer = ({ open, onClose, onLoginRequest, autoCheckout = false, onChe
   // Déclencher automatiquement le checkout si demandé
   useEffect(() => {
     if (autoCheckout && open && cart.items.length > 0 && user) {
-      console.log('🚀 Auto-checkout déclenché depuis le timer');
       setCheckoutOpen(true);
       if (onCheckoutStart) {
         onCheckoutStart();

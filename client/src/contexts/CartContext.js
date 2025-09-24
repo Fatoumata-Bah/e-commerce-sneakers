@@ -35,7 +35,6 @@ export const CartProvider = ({ children }) => {
         await cartService.add(item.productVariantId, item.quantity);
       }
       localStorage.removeItem('anonymousCart');
-      console.log('Panier anonyme migré avec succès');
     } catch (error) {
       console.error('Erreur lors de la migration du panier:', error);
     }

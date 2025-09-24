@@ -33,7 +33,6 @@ const readCSVFile = (filePath) => {
         }
       })
       .on('end', () => {
-        console.log(`✅ Fichier ${path.basename(filePath)} lu: ${results.length} produits`);
         resolve(results);
       })
       .on('error', reject);
@@ -70,7 +69,7 @@ const usersData = [
   {
     firstName: 'Fatoumata',
     lastName: 'Bah',
-    email: 'admin@solehub.com',
+    email: 'admin@sneakersshop.com',
     password: 'SneakersShop2025!Admin',
     role: 'admin'
   },
@@ -193,14 +192,13 @@ const determineCategory = (name, description) => {
 // Fonction principale de seeding
 const seedProductionData = async () => {
   try {
-    console.log('🚀 DÉBUT DU SEEDING DE PRODUCTION...\n');
+    console.log('🔧 INITIALISATION DE LA BASE DE DONNÉES...');
+    
+    // Créer les tables si elles n'existent pas
+    await sequelize.sync({ force: true }); // force: true recrée les tables
+    console.log('✅ Tables créées avec succès');
 
-    // Nettoyer la base de données
-    console.log('🧹 NETTOYAGE DE LA BASE DE DONNÉES...');
-    await ProductVariant.destroy({ where: {}, truncate: true });
-    await Product.destroy({ where: {}, truncate: true });
-    await User.destroy({ where: {}, truncate: true });
-    console.log('✅ Base de données nettoyée\n');
+    // Les tables sont maintenant créées, pas besoin de nettoyer
 
     // Lire tous les fichiers CSV
     console.log('📖 LECTURE DES FICHIERS CSV...');
@@ -219,17 +217,14 @@ const seedProductionData = async () => {
     for (const userData of usersData) {
       userPasswords[userData.email] = userData.password;
       
-      const hashedPassword = await bcryptjs.hash(userData.password, 12);
+      // Le modèle User hache automatiquement le mot de passe via beforeCreate hook
       
       const user = await User.create({
-        ...userData,
-        password: hashedPassword
-      }, {
-        hooks: false // Éviter le double hashage
+        ...userData
+        // password sera haché automatiquement par le hook beforeCreate
       });
       
       createdUsers.push(user);
-      console.log(`✅ ${user.role.toUpperCase()}: ${user.email}`);
     }
 
     // Séparer les sellers
@@ -305,13 +300,11 @@ const seedProductionData = async () => {
               });
             } catch (error) {
               // Si erreur de création (ex: SKU duplicate), continuer
-              console.log(`⚠️ Variant non créé: ${size} ${sizeType} - ${error.message}`);
             }
           }
         }
 
         if ((createdProducts.length) % 10 === 0) {
-          console.log(`✅ ${createdProducts.length} produits créés...`);
         }
 
       } catch (error) {
@@ -333,7 +326,6 @@ const seedProductionData = async () => {
       brandStats[product.brand] = (brandStats[product.brand] || 0) + 1;
     });
     
-    console.log('\n🏷️ RÉPARTITION PAR MARQUE:');
     Object.entries(brandStats).forEach(([brand, count]) => {
       console.log(`   ${brand}: ${count} produits`);
     });
@@ -360,7 +352,6 @@ const seedProductionData = async () => {
     });
 
     console.log('\n🎉 SEEDING TERMINÉ AVEC SUCCÈS !');
-    console.log('🚀 Votre marketplace est prête pour la production !');
 
   } catch (error) {
     console.error('❌ ERREUR LORS DU SEEDING:', error);
@@ -372,7 +363,6 @@ const seedProductionData = async () => {
 if (require.main === module) {
   seedProductionData()
     .then(() => {
-      console.log('\n✅ Script terminé avec succès');
       process.exit(0);
     })
     .catch((error) => {

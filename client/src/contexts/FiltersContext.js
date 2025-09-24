@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import useDebounce from '../hooks/useDebounce';
 
 const FiltersContext = createContext();
 
@@ -21,6 +22,9 @@ export const FiltersProvider = ({ children }) => {
   // État pour la pagination
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Debouncer le terme de recherche avec un délai de 500ms
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
   // Fonction pour réinitialiser tous les filtres
   const resetFilters = useCallback(() => {
     setSearchTerm('');
@@ -39,6 +43,7 @@ export const FiltersProvider = ({ children }) => {
   const value = {
     // États
     searchTerm,
+    debouncedSearchTerm, // Exposer la version debouncée
     categoryFilter,
     brandFilter,
     sizeFilter,

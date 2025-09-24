@@ -94,17 +94,14 @@ const CookieBanner = () => {
   const enableThirdPartyServices = (preferences) => {
     // Ici vous pourriez activer/désactiver Google Analytics, Facebook Pixel, etc.
     if (preferences.analytics) {
-      // console.log('Analytics cookies enabled');
       // Exemple: gtag('config', 'GA_MEASUREMENT_ID');
     }
     
     if (preferences.marketing) {
-      // console.log('Marketing cookies enabled');
       // Exemple: fbq('init', 'FACEBOOK_PIXEL_ID');
     }
     
     if (preferences.preferences) {
-      // console.log('Preference cookies enabled');
     }
   };
 

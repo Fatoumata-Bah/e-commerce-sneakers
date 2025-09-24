@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Container, Grid, Chip, Card, CardMedia, CardContent } from '@mui/material';
+import { Box, Typography, Button, Container, Grid, Chip, Card, CardMedia } from '@mui/material';
 import { ShoppingBag, TrendingUp, Verified } from '@mui/icons-material';
 import { productService } from '../services/api';
 
 const HeroSection = ({ onShopNow, onShowOffers }) => {
+  // Fonction pour naviguer vers la collection avec filtre
+  const handleCategoryClick = (category) => {
+    // Utiliser l'événement onShopNow avec un paramètre de catégorie
+    if (onShopNow) {
+      onShopNow(category);
+    }
+  };
   const [products, setProducts] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -376,18 +383,21 @@ const HeroSection = ({ onShopNow, onShowOffers }) => {
           {[
             {
               category: 'Femmes',
+              filterValue: 'women',
               icon: '👠',
               gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               description: 'Style & Confort'
             },
             {
               category: 'Hommes', 
+              filterValue: 'men',
               icon: '👟',
               gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
               description: 'Sport & Lifestyle'
             },
             {
               category: 'Enfants',
+              filterValue: 'kids',
               icon: '🎨',
               gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
               description: 'Sécurité & Fun'
@@ -395,6 +405,7 @@ const HeroSection = ({ onShopNow, onShowOffers }) => {
           ].map((item, index) => (
             <Box
               key={item.category}
+              onClick={() => handleCategoryClick(item.filterValue)}
               sx={{
                 flex: '1 1 280px',
                 maxWidth: { xs: '100%', md: '300px' },

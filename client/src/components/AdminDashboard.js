@@ -99,12 +99,10 @@ const AdminDashboard = () => {
 
   const fetchProducts = async () => {
     try {
-      console.log('🔄 Fetching products...');
       // Utiliser l'API appropriée selon le rôle
       const response = user?.role === 'seller' 
         ? await productService.getMyProducts()
         : await productService.getAll();
-      console.log('✅ Products fetched:', response.data.products.length, 'products');
       const productsData = response.data.products;
       setProducts(productsData);
       
@@ -305,12 +303,10 @@ const AdminDashboard = () => {
       };
 
       if (selectedProduct) {
-        console.log('💾 Updating product:', selectedProduct.id, 'with variants:', productData.variants.map(v => `${v.size}${v.sizeType}:${v.stock}`));
         await productService.update(selectedProduct.id, productData);
         showNotification('Produit et stocks modifiés avec succès', 'success');
         
         // Attendre que fetchProducts soit terminé avant de fermer le dialog
-        console.log('🔄 Refreshing products after update...');
         await fetchProducts();
       } else {
         await productService.create(productData);

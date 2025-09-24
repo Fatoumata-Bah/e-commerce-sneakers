@@ -10,12 +10,10 @@ class ExpiredCartService {
    */
   static async saveExpiredItems(userId, cartItems) {
     if (!userId || !cartItems || cartItems.length === 0) {
-      console.log('❌ Aucun article à sauvegarder pour l\'expiration');
       return [];
     }
 
     try {
-      console.log(`💾 Sauvegarde de ${cartItems.length} articles expirés pour l'utilisateur ${userId}`);
       
       const expiredItems = [];
       
@@ -52,7 +50,6 @@ class ExpiredCartService {
           });
 
           if (recentExpired) {
-            console.log(`⚠️ Article déjà expiré récemment: ${productVariant.Product.name} - Mise à jour de la quantité`);
             // Mettre à jour la quantité si nécessaire
             if (recentExpired.quantity < item.quantity) {
               await recentExpired.update({ quantity: item.quantity });
@@ -69,7 +66,6 @@ class ExpiredCartService {
             });
             
             expiredItems.push(expiredItem);
-            console.log(`✅ Article expiré sauvegardé: ${productVariant.Product.name} (${item.quantity}x)`);
           }
         }
       }
@@ -156,10 +152,8 @@ class ExpiredCartService {
       });
 
       if (deletedCount > 0) {
-        console.log(`✅ Article expiré ${expiredItemId} supprimé après remise au panier`);
         return true;
       } else {
-        console.log(`⚠️ Aucun article expiré trouvé avec l'ID ${expiredItemId} pour l'utilisateur ${userId}`);
         return false;
       }
     } catch (error) {
@@ -185,7 +179,6 @@ class ExpiredCartService {
         }
       });
 
-      console.log(`🧹 Nettoyage: ${deletedCount} articles expirés de plus de ${daysOld} jours supprimés`);
       return deletedCount;
     } catch (error) {
       console.error('❌ Erreur lors du nettoyage des articles expirés:', error);
