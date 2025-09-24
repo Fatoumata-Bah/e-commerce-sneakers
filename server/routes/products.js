@@ -7,7 +7,7 @@ const router = express.Router();
 // Route pour les sellers - uniquement leurs produits
 router.get('/my-products', authenticateToken, requireRole(['seller', 'admin']), async (req, res) => {
   try {
-    const { category, brand, search, page = 1, limit = 20 } = req.query;
+    const { category, brand, search, page = 1, limit = 12 } = req.query;
     const offset = (page - 1) * limit;
 
     const where = { isActive: true };
@@ -39,9 +39,19 @@ router.get('/my-products', authenticateToken, requireRole(['seller', 'admin']), 
           attributes: ['id', 'firstName', 'lastName', 'sellerInfo', 'role']
         }
       ],
+      distinct: true, // Important: compte seulement les produits uniques
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [['createdAt', 'DESC']]
+      order: (() => {
+        switch (sortBy) {
+          case 'price-asc': return [['basePrice', 'ASC']];
+          case 'price-desc': return [['basePrice', 'DESC']];
+          case 'name': return [['name', 'ASC']];
+          case 'name-desc': return [['name', 'DESC']];
+          case 'newest': return [['createdAt', 'DESC']];
+          default: return [require('sequelize').fn('RANDOM')]; // Ordre aléatoire par défaut
+        }
+      })()
     });
 
     res.json({
@@ -62,7 +72,7 @@ router.get('/my-products', authenticateToken, requireRole(['seller', 'admin']), 
 
 router.get('/', async (req, res) => {
   try {
-    const { category, brand, search, page = 1, limit = 20 } = req.query;
+    const { category, brand, search, page = 1, limit = 12, sortBy = 'newest' } = req.query;
     const offset = (page - 1) * limit;
 
     const where = { isActive: true };
@@ -88,9 +98,19 @@ router.get('/', async (req, res) => {
           attributes: ['id', 'firstName', 'lastName', 'sellerInfo', 'role']
         }
       ],
+      distinct: true, // Important: compte seulement les produits uniques
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [['createdAt', 'DESC']]
+      order: (() => {
+        switch (sortBy) {
+          case 'price-asc': return [['basePrice', 'ASC']];
+          case 'price-desc': return [['basePrice', 'DESC']];
+          case 'name': return [['name', 'ASC']];
+          case 'name-desc': return [['name', 'DESC']];
+          case 'newest': return [['createdAt', 'DESC']];
+          default: return [require('sequelize').fn('RANDOM')]; // Ordre aléatoire par défaut
+        }
+      })()
     });
 
     res.json({

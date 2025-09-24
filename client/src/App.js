@@ -3,54 +3,63 @@ import { ThemeProvider, createTheme, CssBaseline, Container, Typography, Box, To
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { FiltersProvider } from './contexts/FiltersContext';
+import { CartTimerProvider } from './contexts/CartTimerContext';
+import AuthFiltersSync from './components/AuthFiltersSync';
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
+import AnimatedBackground from './components/AnimatedBackground';
 import ProductCatalog from './components/ProductCatalog';
 import OrdersList from './components/OrdersList';
+import ExpiredItemsHistory from './components/ExpiredItemsHistory';
 import AdminDashboard from './components/AdminDashboard';
+import CookieBanner from './components/CookieBanner';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import LegalNotices from './components/LegalNotices';
+import Footer from './components/Footer';
 
 const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#2c3e50',      // Bleu marine sophistiqué
-      light: '#34495e',
-      dark: '#1a252f',
+      main: '#2d3748',      // Gris anthracite premium
+      light: '#4a5568',
+      dark: '#1a1a1a',      // Noir premium
       contrastText: '#ffffff'
     },
     secondary: {
-      main: '#e74c3c',      // Rouge énergique pour CTAs
-      light: '#ec7063',
-      dark: '#c0392b',
+      main: '#ff6b35',      // Orange énergique SneakersShop
+      light: '#ff8a65',
+      dark: '#e64a19',
       contrastText: '#ffffff'
     },
     accent: {
-      main: '#f39c12',      // Orange premium pour highlights
-      light: '#f4d03f',
-      dark: '#d68910'
+      main: '#ffd700',      // Or premium pour highlights
+      light: '#ffeb3b',
+      dark: '#ffa000'
     },
     background: {
-      default: '#fafafa',   // Fond très léger
+      default: '#f7fafc',   // Gris très clair
       paper: '#ffffff'
     },
     text: {
-      primary: '#2c3e50',
-      secondary: '#7f8c8d'
+      primary: '#1a1a1a',   // Noir premium
+      secondary: '#a0aec0'   // Gris moyen
     },
     success: {
-      main: '#27ae60',      // Vert pour stock/succès
-      light: '#58d68d',
-      dark: '#1e8449'
+      main: '#48bb78',      // Vert moderne
+      light: '#68d391',
+      dark: '#38a169'
     },
     warning: {
-      main: '#f39c12',      // Orange pour alertes
-      light: '#f4d03f',
-      dark: '#d68910'
+      main: '#ed8936',      // Orange alerte
+      light: '#f6ad55',
+      dark: '#dd6b20'
     },
     error: {
-      main: '#e74c3c',      // Rouge pour erreurs
-      light: '#ec7063',
-      dark: '#c0392b'
+      main: '#f56565',      // Rouge moderne
+      light: '#fc8181',
+      dark: '#e53e3e'
     }
   },
   typography: {
@@ -165,6 +174,15 @@ const AppContent = () => {
   const [currentView, setCurrentView] = useState('products');
   const { user } = useAuth();
 
+  // Fonction de navigation qui nettoie automatiquement les hash
+  const navigateTo = (view) => {
+    // Nettoyer l'URL des hash si présents
+    if (window.location.hash) {
+      window.history.replaceState(null, null, window.location.pathname);
+    }
+    setCurrentView(view);
+  };
+
   const renderContent = () => {
     switch (currentView) {
       case 'orders':
@@ -181,28 +199,46 @@ const AppContent = () => {
             </Box>
           );
         }
-        return (
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="h4" component="h1" gutterBottom>
-              Mes commandes
-            </Typography>
-            <OrdersList />
-          </Box>
-        );
+        return <OrdersList />;
+      case 'expired-items':
+        if (!user || user.role !== 'customer') {
+          return (
+            <Box sx={{ textAlign: 'center', py: 8 }}>
+              <Typography variant="h6" color="text.secondary">
+                Cette page est réservée aux clients.
+              </Typography>
+            </Box>
+          );
+        }
+        return <ExpiredItemsHistory />;
       case 'admin':
         return <AdminDashboard />;
+      case 'privacy':
+        return <PrivacyPolicy />;
+      case 'legal':
+        return <LegalNotices />;
       case 'products':
       default:
         return (
           <>
-            <HeroSection onShopNow={() => {
-              // Scroll vers le catalogue
-              const catalogElement = document.getElementById('product-catalog');
-              if (catalogElement) {
-                catalogElement.scrollIntoView({ behavior: 'smooth' });
-              }
-            }} />
-            <Container maxWidth="lg" sx={{ py: 6 }} id="product-catalog">
+            <HeroSection 
+              onShopNow={() => {
+                // Scroll vers le catalogue
+                const catalogElement = document.getElementById('product-catalog');
+                if (catalogElement) {
+                  catalogElement.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+              onShowOffers={() => {
+                // Scroll vers le catalogue avec focus sur les nouveautés
+                const catalogElement = document.getElementById('product-catalog');
+                if (catalogElement) {
+                  catalogElement.scrollIntoView({ behavior: 'smooth' });
+                  // TODO: Filtrer par nouveautés quand cette fonctionnalité sera implémentée
+                }
+              }}
+            />
+            <Container maxWidth="lg" sx={{ py: 8 }} id="product-catalog">
               <Box sx={{ mb: 4, textAlign: 'center' }}>
                 <Typography variant="h3" component="h2" gutterBottom sx={{ fontWeight: 700 }}>
                   Notre Collection
@@ -226,9 +262,13 @@ const AppContent = () => {
       </a>
       
       <Header 
-        onShowOrders={() => setCurrentView('orders')} 
-        onShowProducts={() => setCurrentView('products')}
-        onShowAdmin={() => setCurrentView('admin')}
+        onShowOrders={() => navigateTo('orders')} 
+        onShowProducts={() => navigateTo('products')}
+        onShowAdmin={() => navigateTo('admin')}
+        onShowExpiredItems={() => navigateTo('expired-items')}
+        onShowPrivacy={() => navigateTo('privacy')}
+        onShowLegal={() => navigateTo('legal')}
+        onNavigateHome={() => navigateTo('home')}
       />
       {/* Espacement pour le header fixe */}
       <Toolbar />
@@ -241,6 +281,16 @@ const AppContent = () => {
       >
         {renderContent()}
       </Box>
+      
+      {/* Footer avec liens légaux */}
+      <Footer 
+        onShowPrivacy={() => navigateTo('privacy')}
+        onShowLegal={() => navigateTo('legal')}
+      />
+      
+      {/* Bandeau de cookies RGPD */}
+      <CookieBanner />
+      
     </>
   );
 };
@@ -253,7 +303,14 @@ function App() {
       <NotificationProvider>
         <AuthProvider>
           <CartProvider>
-            <AppContent />
+            <CartTimerProvider>
+              <FiltersProvider>
+                <AuthFiltersSync>
+                  <AnimatedBackground />
+                  <AppContent />
+                </AuthFiltersSync>
+              </FiltersProvider>
+            </CartTimerProvider>
           </CartProvider>
         </AuthProvider>
       </NotificationProvider>

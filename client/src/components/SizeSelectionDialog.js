@@ -36,6 +36,22 @@ const SizeSelectionDialog = ({
   if (!product) return null;
 
   const availableVariants = product.ProductVariants?.filter(v => v.stock > 0) || [];
+  
+  // Grouper et trier les pointures par type
+  const groupedVariants = availableVariants.reduce((acc, variant) => {
+    const type = variant.sizeType || 'EU';
+    if (!acc[type]) acc[type] = [];
+    acc[type].push(variant);
+    return acc;
+  }, {});
+  
+  // Trier par type (EU, UK, US) puis par taille numérique
+  const sortedGroupedVariants = {};
+  ['EU', 'UK', 'US'].forEach(type => {
+    if (groupedVariants[type]) {
+      sortedGroupedVariants[type] = groupedVariants[type].sort((a, b) => parseFloat(a.size) - parseFloat(b.size));
+    }
+  });
   const selectedVariantData = availableVariants.find(v => v.id === selectedVariant);
 
   const handleConfirm = () => {
@@ -96,63 +112,72 @@ const SizeSelectionDialog = ({
           </Box>
         )}
 
-        {/* Grille des pointures */}
+        {/* Grille des pointures organisée par type */}
         <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
           Pointures disponibles ({availableVariants.length})
         </Typography>
         
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          {availableVariants.map((variant) => (
-            <Grid item xs={6} sm={4} md={3} key={variant.id}>
-              <Card
-                sx={{
-                  cursor: 'pointer',
-                  border: selectedVariant === variant.id ? '2px solid' : '1px solid',
-                  borderColor: selectedVariant === variant.id ? 'primary.main' : 'grey.300',
-                  backgroundColor: selectedVariant === variant.id ? 'primary.light' : 'white',
-                  transform: selectedVariant === variant.id ? 'scale(1.02)' : 'scale(1)',
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    borderColor: 'primary.main',
-                    transform: 'scale(1.02)',
-                    boxShadow: 2
-                  }
-                }}
-                onClick={() => setSelectedVariant(variant.id)}
-              >
-                <CardContent sx={{ p: 2, textAlign: 'center', '&:last-child': { pb: 2 } }}>
-                  <Typography 
-                    variant="h6" 
-                    sx={{ 
-                      fontWeight: 600,
-                      color: selectedVariant === variant.id ? 'primary.main' : 'text.primary'
+        {Object.entries(sortedGroupedVariants).map(([sizeType, variants]) => (
+          <Box key={sizeType} sx={{ mb: 3 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500, color: 'primary.main' }}>
+              {sizeType === 'EU' ? '🇪🇺 Europe (EU)' : 
+               sizeType === 'UK' ? '🇬🇧 Royaume-Uni (UK)' : 
+               sizeType === 'US' ? '🇺🇸 États-Unis (US)' : sizeType}
+            </Typography>
+            <Grid container spacing={2} sx={{ mb: 2 }}>
+              {variants.map((variant) => (
+                <Grid item xs={6} sm={4} md={3} key={variant.id}>
+                  <Card
+                    sx={{
+                      cursor: 'pointer',
+                      border: selectedVariant === variant.id ? '2px solid' : '1px solid',
+                      borderColor: selectedVariant === variant.id ? 'primary.main' : 'grey.300',
+                      backgroundColor: selectedVariant === variant.id ? 'primary.light' : 'white',
+                      transform: selectedVariant === variant.id ? 'scale(1.02)' : 'scale(1)',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        borderColor: 'primary.main',
+                        transform: 'scale(1.02)',
+                        boxShadow: 2
+                      }
                     }}
+                    onClick={() => setSelectedVariant(variant.id)}
                   >
-                    {variant.size}
-                  </Typography>
-                  
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5, mt: 1 }}>
-                    <Inventory2 
-                      sx={{ 
-                        fontSize: '0.9rem',
-                        color: getStockColor(variant.stock)
-                      }} 
-                    />
-                    <Typography 
-                      variant="caption" 
-                      sx={{ 
-                        color: getStockColor(variant.stock),
-                        fontWeight: 500
-                      }}
-                    >
-                      {variant.stock}
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
+                    <CardContent sx={{ p: 2, textAlign: 'center', '&:last-child': { pb: 2 } }}>
+                      <Typography 
+                        variant="h6" 
+                        sx={{ 
+                          fontWeight: 600,
+                          color: selectedVariant === variant.id ? 'primary.main' : 'text.primary'
+                        }}
+                      >
+                        {variant.size}
+                      </Typography>
+                      
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5, mt: 1 }}>
+                        <Inventory2 
+                          sx={{ 
+                            fontSize: '0.9rem',
+                            color: getStockColor(variant.stock)
+                          }} 
+                        />
+                        <Typography 
+                          variant="caption" 
+                          sx={{ 
+                            color: getStockColor(variant.stock),
+                            fontWeight: 500
+                          }}
+                        >
+                          {variant.stock}
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
             </Grid>
-          ))}
-        </Grid>
+          </Box>
+        ))}
 
         {availableVariants.length === 0 && (
           <Box sx={{ textAlign: 'center', py: 4 }}>

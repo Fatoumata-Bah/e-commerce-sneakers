@@ -28,7 +28,8 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Autocomplete
+  Autocomplete,
+  Container
 } from '@mui/material';
 import { Add, Edit, Delete, Inventory, Assessment, ExpandMore, FilterList } from '@mui/icons-material';
 import { productService, orderService } from '../services/api';
@@ -512,21 +513,65 @@ const AdminDashboard = () => {
   }
 
   return (
-    <Box sx={{ width: '100%', mt: 2 }}>
-      <Typography variant="h4" gutterBottom>
-        Dashboard {user.role === 'admin' ? 'Administrateur' : 'Vendeur'}
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Box sx={{ textAlign: 'center', mb: 4 }}>
+        <Typography 
+          variant="h3" 
+          component="h1" 
+          gutterBottom 
+          sx={{ 
+            fontWeight: 700,
+            background: 'linear-gradient(45deg, #2d3748 30%, #ff6b35 90%)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent'
+          }}
+        >
+          🏪 Dashboard {user.role === 'admin' ? 'Administrateur' : 'Vendeur'}
       </Typography>
+        <Typography variant="h6" color="text.secondary" sx={{ maxWidth: '600px', mx: 'auto' }}>
+          {user.role === 'admin' 
+            ? 'Gestion complète de la marketplace SneakersShop' 
+            : 'Gérez vos produits et commandes sur SneakersShop'
+          }
+        </Typography>
+      </Box>
 
-      <Tabs value={currentTab} onChange={(e, newValue) => setCurrentTab(newValue)}>
-        <Tab label={user.role === 'seller' ? 'Mes Produits' : 'Gestion Produits'} />
-        <Tab label="Gestion Commandes" />
+      <Paper elevation={2} sx={{ mb: 4, borderRadius: 3 }}>
+        <Tabs 
+          value={currentTab} 
+          onChange={(e, newValue) => setCurrentTab(newValue)}
+          centered
+          sx={{
+            '& .MuiTab-root': {
+              fontWeight: 600,
+              fontSize: '1rem',
+              textTransform: 'none',
+              minHeight: '64px',
+              px: 4
+            },
+            '& .MuiTabs-indicator': {
+              height: 3,
+              borderRadius: '3px 3px 0 0'
+            }
+          }}
+        >
+          <Tab 
+            label={user.role === 'seller' ? '📦 Mes Produits' : '🏪 Gestion Produits'} 
+            sx={{ color: currentTab === 0 ? 'primary.main' : 'text.secondary' }}
+          />
+          <Tab 
+            label="📋 Gestion Commandes" 
+            sx={{ color: currentTab === 1 ? 'primary.main' : 'text.secondary' }}
+          />
       </Tabs>
+      </Paper>
 
       {currentTab === 0 && (
-        <Box sx={{ mt: 3 }}>
+        <Paper elevation={1} sx={{ p: 4, borderRadius: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h5">
-              Produits ({getFilteredProducts().length}{products.length !== getFilteredProducts().length ? ` / ${products.length}` : ''})
+            <Typography variant="h5" sx={{ fontWeight: 600, color: 'text.primary' }}>
+              📦 Produits ({getFilteredProducts().length}{products.length !== getFilteredProducts().length ? ` / ${products.length}` : ''})
             </Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Button 
@@ -668,14 +713,14 @@ const AdminDashboard = () => {
               </TableBody>
             </Table>
           </TableContainer>
-        </Box>
+        </Paper>
       )}
 
       {currentTab === 1 && (
-        <Box sx={{ mt: 3 }}>
+        <Paper elevation={1} sx={{ p: 4, borderRadius: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h5">
-              Commandes ({getFilteredOrders().length}{orders.length !== getFilteredOrders().length ? ` / ${orders.length}` : ''})
+            <Typography variant="h5" sx={{ fontWeight: 600, color: 'text.primary' }}>
+              📋 Commandes ({getFilteredOrders().length}{orders.length !== getFilteredOrders().length ? ` / ${orders.length}` : ''})
             </Typography>
             {(user?.role === 'admin' || user?.role === 'seller') && (
               <Button 
@@ -964,9 +1009,8 @@ const AdminDashboard = () => {
               </TableBody>
             </Table>
           </TableContainer>
-        </Box>
+        </Paper>
       )}
-
 
       <Dialog open={productDialog} onClose={() => setProductDialog(false)} maxWidth="lg" fullWidth>
         <DialogTitle sx={{ 
@@ -1453,7 +1497,7 @@ const AdminDashboard = () => {
         loading={deleteLoading}
         irreversible={true}
       />
-    </Box>
+    </Container>
   );
 };
 

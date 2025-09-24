@@ -9,8 +9,11 @@ import {
   Tabs,
   Tab,
   Alert,
-  CircularProgress
+  CircularProgress,
+  IconButton,
+  InputAdornment
 } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 
@@ -18,6 +21,7 @@ const AuthDialog = ({ open, onClose, message }) => {
   const [tab, setTab] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -33,6 +37,10 @@ const AuthDialog = ({ open, onClose, message }) => {
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+
+  const handleTogglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   const handleSubmit = async (e) => {
@@ -59,6 +67,7 @@ const AuthDialog = ({ open, onClose, message }) => {
           firstName: '',
           lastName: ''
         });
+        setShowPassword(false);
         
         if (result.hasAnonymousCart) {
           showNotification('Vos articles ont été ajoutés à votre panier !', 'success');
@@ -76,7 +85,11 @@ const AuthDialog = ({ open, onClose, message }) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>
-        <Tabs value={tab} onChange={(e, newValue) => setTab(newValue)}>
+        <Tabs value={tab} onChange={(e, newValue) => {
+          setTab(newValue);
+          setShowPassword(false); // Reset password visibility when switching tabs
+          setError(''); // Clear any errors when switching tabs
+        }}>
           <Tab label="Connexion" />
           <Tab label="Inscription" />
         </Tabs>
@@ -132,12 +145,32 @@ const AuthDialog = ({ open, onClose, message }) => {
           <TextField
             name="password"
             label="Mot de passe"
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             fullWidth
             margin="normal"
             value={formData.password}
             onChange={handleChange}
             required
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="toggle password visibility"
+                    onClick={handleTogglePasswordVisibility}
+                    edge="end"
+                    sx={{ 
+                      color: 'text.secondary',
+                      '&:hover': {
+                        color: 'primary.main',
+                        backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                      }
+                    }}
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
           />
           
           <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>

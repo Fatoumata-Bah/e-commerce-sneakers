@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Grid, Card, CardMedia, CardContent, Typography, Button, Chip, Box, CircularProgress, Alert, Fade } from '@mui/material';
-import { LocalOffer, Star, ShoppingCart, Inventory2 } from '@mui/icons-material';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Grid, Card, CardMedia, CardContent, Typography, Button, Chip, Box, CircularProgress, Alert, Fade, Pagination } from '@mui/material';
+import { LocalOffer, ShoppingCart, Inventory2 } from '@mui/icons-material';
 import { productService } from '../services/api';
-import { useCart } from '../contexts/CartContext';
+import useCartWithTimer from '../hooks/useCartWithTimer';
 import { useNotification } from '../contexts/NotificationContext';
+import { useFilters } from '../contexts/FiltersContext';
 import ProductFilters from './ProductFilters';
 import SizeSelectionDialog from './SizeSelectionDialog';
 
@@ -12,38 +13,104 @@ const ProductCatalog = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // États pour les filtres
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [brandFilter, setBrandFilter] = useState('all');
-  const [sizeFilter, setSizeFilter] = useState([]);
-  const [sortBy, setSortBy] = useState('name');
+  // États pour la pagination
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   
   // États pour le dialog de sélection de pointure
   const [sizeDialogOpen, setSizeDialogOpen] = useState(false);
   const [selectedProductForSize, setSelectedProductForSize] = useState(null);
   const [addToCartLoading, setAddToCartLoading] = useState(false);
   
-  const { addToCart } = useCart();
+  const { addToCart } = useCartWithTimer();
   const { showNotification } = useNotification();
+  
+  // Utilisation du contexte des filtres
+  const {
+    searchTerm,
+    categoryFilter,
+    brandFilter,
+    sizeFilter,
+    sortBy,
+    currentPage,
+    setSearchTerm,
+    setCategoryFilter,
+    setBrandFilter,
+    setSizeFilter,
+    setSortBy,
+    setCurrentPage,
+    resetPagination
+  } = useFilters();
 
+  // Fonction pour récupérer les produits avec pagination et filtres
+  const fetchProducts = useCallback(async (page = 1, filters = {}) => {
+    setLoading(true);
+    try {
+      const params = {
+        page,
+        limit: 12,
+        ...filters
+      };
+      
+      const response = await productService.getAll(params);
+      setProducts(response.data.products);
+      setCurrentPage(response.data.pagination.currentPage);
+      setTotalPages(response.data.pagination.totalPages);
+      setTotalItems(response.data.pagination.totalItems);
+    } catch (err) {
+      setError('Erreur lors du chargement des produits');
+    } finally {
+      setLoading(false);
+    }
+  }, [setCurrentPage, setTotalPages, setTotalItems]);
+
+  // Effet pour charger les produits initialement
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await productService.getAll();
-        setProducts(response.data.products);
-      } catch (err) {
-        setError('Erreur lors du chargement des produits');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchProducts();
-  }, []);
+  }, [fetchProducts]);
+
+  // Effet pour recharger les produits quand les filtres changent
+  useEffect(() => {
+    const filters = {};
+    if (categoryFilter !== 'all') filters.category = categoryFilter;
+    if (brandFilter !== 'all') filters.brand = brandFilter;
+    if (searchTerm) filters.search = searchTerm;
+    if (sortBy) filters.sortBy = sortBy;
+    
+    resetPagination(); // Reset à la page 1 quand les filtres changent
+    fetchProducts(1, filters);
+  }, [categoryFilter, brandFilter, searchTerm, sortBy, fetchProducts, resetPagination]);
+
+  // Gestionnaire de changement de page
+  const handlePageChange = (event, page) => {
+    const filters = {};
+    if (categoryFilter !== 'all') filters.category = categoryFilter;
+    if (brandFilter !== 'all') filters.brand = brandFilter;
+    if (searchTerm) filters.search = searchTerm;
+    if (sortBy) filters.sortBy = sortBy;
+    
+    fetchProducts(page, filters);
+  };
 
   const getCategoryColor = (category) => {
     const colors = { men: 'primary', women: 'secondary', kids: 'success' };
     return colors[category] || 'default';
+  };
+
+  // Fonction pour obtenir l'image du produit avec fallback
+  const getProductImage = (product, forceFallback = false) => {
+    if (forceFallback || !product.images || product.images.length === 0) {
+      // Images de fallback spécifiques par marque/type
+      const fallbackImages = {
+        'Nike': 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=300&fit=crop&auto=format&q=80',
+        'Jordan': 'https://images.unsplash.com/photo-1556906781-9a412961c28c?w=400&h=300&fit=crop&auto=format&q=80',
+        'Adidas': 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=300&fit=crop&auto=format&q=80',
+        'New Balance': 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=400&h=300&fit=crop&auto=format&q=80',
+        'ASICS': 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=400&h=300&fit=crop&auto=format&q=80'
+      };
+      return fallbackImages[product.brand] || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=300&fit=crop&auto=format&q=80';
+    }
+    return product.images[0];
   };
 
 
@@ -134,47 +201,19 @@ const ProductCatalog = () => {
     });
   }, [products]);
 
-  // Filtrage et tri des produits
+  // Filtrage des produits par taille (côté client pour les tailles seulement)
   const filteredProducts = useMemo(() => {
-    let filtered = products.filter(product => {
-      // Filtre par recherche
-      const matchesSearch = !searchTerm || 
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.brand.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      // Filtre par catégorie
-      const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
-      
-      // Filtre par marque
-      const matchesBrand = brandFilter === 'all' || product.brand === brandFilter;
-      
-      // Filtre par pointure (utiliser les clés pointure-type)
-      const matchesSize = sizeFilter.length === 0 || 
-        product.ProductVariants?.some(variant => {
-          const sizeKey = `${variant.size}-${variant.sizeType}`;
-          return sizeFilter.includes(sizeKey) && variant.stock > 0;
-        });
-      
-      return matchesSearch && matchesCategory && matchesBrand && matchesSize;
+    if (sizeFilter.length === 0) {
+      return products;
+    }
+    
+    return products.filter(product => {
+      return product.ProductVariants?.some(variant => {
+        const sizeKey = `${variant.size}-${variant.sizeType}`;
+        return sizeFilter.includes(sizeKey) && variant.stock > 0;
+      });
     });
-
-    // Tri
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'price-asc':
-          return parseFloat(a.basePrice) - parseFloat(b.basePrice);
-        case 'price-desc':
-          return parseFloat(b.basePrice) - parseFloat(a.basePrice);
-        case 'newest':
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        case 'name':
-        default:
-          return a.name.localeCompare(b.name);
-      }
-    });
-
-    return filtered;
-  }, [products, searchTerm, categoryFilter, brandFilter, sizeFilter, sortBy]);
+  }, [products, sizeFilter]);
 
   const getCategoryLabel = (category) => {
     switch (category) {
@@ -187,15 +226,24 @@ const ProductCatalog = () => {
 
   const isNewProduct = (createdAt) => {
     const productDate = new Date(createdAt);
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    return productDate > thirtyDaysAgo;
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return productDate > sevenDaysAgo;
   };
 
-  const getStockStatus = (variants) => {
+  const getStockStatus = (variants, sizeFilters = []) => {
     if (!variants || variants.length === 0) return { status: 'out', count: 0 };
     
-    const totalStock = variants.reduce((sum, v) => sum + (v.stock || 0), 0);
+    // Filtrer les variants selon les filtres de taille appliqués
+    let filteredVariants = variants;
+    if (sizeFilters.length > 0) {
+      filteredVariants = variants.filter(variant => {
+        const sizeKey = `${variant.size}-${variant.sizeType}`;
+        return sizeFilters.includes(sizeKey);
+      });
+    }
+    
+    const totalStock = filteredVariants.reduce((sum, v) => sum + (v.stock || 0), 0);
     if (totalStock === 0) return { status: 'out', count: 0 };
     if (totalStock <= 5) return { status: 'low', count: totalStock };
     return { status: 'good', count: totalStock };
@@ -237,7 +285,7 @@ const ProductCatalog = () => {
       {/* Résultats */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h6" color="text.secondary">
-          {filteredProducts.length} produit{filteredProducts.length > 1 ? 's' : ''} trouvé{filteredProducts.length > 1 ? 's' : ''}
+          {totalItems} produit{totalItems > 1 ? 's' : ''} trouvé{totalItems > 1 ? 's' : ''}
         </Typography>
       </Box>
 
@@ -246,41 +294,55 @@ const ProductCatalog = () => {
         spacing={3} 
         sx={{ 
           '& .MuiGrid-item': {
-            display: 'flex'
+            display: 'flex',
+            justifyContent: 'center' // Centre les cartes
           },
           justifyContent: 'flex-start',
           alignItems: 'stretch',
-          // Force exactement 3 colonnes sur desktop
+          // Force exactement 4 colonnes sur desktop avec largeur fixe
           '@media (min-width: 900px)': {
             '& .MuiGrid-item': {
-              maxWidth: '33.333333%',
-              flexBasis: '33.333333%'
+              maxWidth: '25%',
+              flexBasis: '25%',
+              display: 'flex',
+              justifyContent: 'center'
             }
           },
-          // Force exactement 2 colonnes sur tablette
+          // Force exactement 2 colonnes sur tablette avec largeur fixe
           '@media (min-width: 600px) and (max-width: 899px)': {
             '& .MuiGrid-item': {
               maxWidth: '50%',
-              flexBasis: '50%'
+              flexBasis: '50%',
+              display: 'flex',
+              justifyContent: 'center'
             }
           }
         }}
       >
         {filteredProducts.map((product, index) => {
-          const stockStatus = getStockStatus(product.ProductVariants);
+          const stockStatus = getStockStatus(product.ProductVariants, sizeFilter);
           const isNew = isNewProduct(product.createdAt);
           
           return (
-            <Grid item xs={12} sm={6} md={4} key={product.id}>
+            <Grid item xs={12} sm={6} md={3} key={product.id}>
               <Fade in={true} timeout={300 + index * 100}>
                 <Card 
                   sx={{ 
-                    height: '100%', 
-                    width: '100%',
+                    height: 480, // Réduit légèrement pour un meilleur équilibre
+                    width: { xs: '100%', sm: '280px', md: '270px' },
+                    maxWidth: { xs: '100%', sm: '280px', md: '270px' },
+                    minWidth: { xs: '100%', sm: '280px', md: '270px' },
                     display: 'flex', 
                     flexDirection: 'column',
                     position: 'relative',
-                    overflow: 'visible'
+                    overflow: 'hidden',
+                    margin: '0 auto',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    '&:hover': {
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                      transform: 'translateY(-2px)',
+                      transition: 'all 0.3s ease'
+                    }
                   }}
                 >
                   {/* Badges */}
@@ -326,89 +388,107 @@ const ProductCatalog = () => {
                     />
                   </Box>
                   
-                  <CardMedia
-                    component="div"
-                    sx={{
-                      height: 220,
-                      background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      position: 'relative',
-                      '&:hover': {
-                        '& .product-emoji': {
-                          transform: 'scale(1.1) rotate(5deg)'
-                        }
-                      }
-                    }}
-                  >
-                    <Typography 
-                      variant="h1" 
-                      className="product-emoji"
-                      sx={{ 
-                        fontSize: '4rem',
-                        transition: 'transform 0.3s ease',
-                        filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))'
+                  <Box sx={{ position: 'relative' }}>
+                    <CardMedia
+                      component="img"
+                      image={product.images && product.images.length > 0 ? product.images[0] : getProductImage(product, true)}
+                      alt={`${product.brand} ${product.name}`}
+                      onError={(e) => {
+                        e.target.src = getProductImage(product, true);
                       }}
-                    >
-                      👟
-                    </Typography>
-                    
+                    sx={{
+                        height: 180, // Réduit de 220 à 180 pour laisser plus d'espace au texte
+                        objectFit: 'cover',
+                        cursor: 'pointer',
+                        backgroundColor: '#f8f9fa',
+                      '&:hover': {
+                          transform: 'scale(1.02)',
+                          transition: 'transform 0.3s ease',
+                          filter: 'brightness(1.1)'
+                        }
+                      }}
+                    />
                     {/* Brand overlay */}
                     <Box
                       sx={{
                         position: 'absolute',
                         bottom: 8,
                         left: 8,
-                        backgroundColor: 'rgba(255,255,255,0.9)',
+                        backgroundColor: 'rgba(255,255,255,0.95)',
                         px: 1.5,
                         py: 0.5,
                         borderRadius: '6px',
-                        backdropFilter: 'blur(4px)'
+                        backdropFilter: 'blur(4px)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
                       }}
                     >
                       <Typography variant="caption" sx={{ fontWeight: 600, color: '#2c3e50' }}>
                         {product.brand}
                       </Typography>
                     </Box>
-                  </CardMedia>
+                  </Box>
                   
                   <CardContent sx={{ 
                     flexGrow: 1, 
-                    p: 3, 
+                    p: 2, // Réduit de 3 à 2 pour optimiser l'espace
                     display: 'flex', 
                     flexDirection: 'column',
                     justifyContent: 'space-between',
-                    width: '100%' // Largeur uniforme
+                    width: '100%',
+                    minWidth: 0,
+                    overflow: 'hidden',
+                    boxSizing: 'border-box'
                   }}>
-                    {/* Catégorie et rating */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    {/* Catégorie */}
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', mb: 1.5 }}>
                       <Chip 
                         label={getCategoryLabel(product.category)}
                         color={getCategoryColor(product.category)}
                         size="small"
                         sx={{ fontWeight: 500 }}
                       />
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Star sx={{ color: '#f39c12', fontSize: '1rem' }} />
-                        <Typography variant="caption" sx={{ fontWeight: 500 }}>
-                          4.8
-                        </Typography>
-                      </Box>
                     </Box>
                     
-                    <Typography gutterBottom variant="h6" component="h3" sx={{ fontWeight: 600, lineHeight: 1.3 }}>
+                    <Typography 
+                      gutterBottom 
+                      variant="h6" 
+                      component="h3" 
+                      sx={{ 
+                        fontWeight: 600, 
+                        lineHeight: 1.4,
+                        fontSize: '1.1rem',
+                        height: '3.6em', // Hauteur optimisée pour 2-3 lignes
+                        overflow: 'hidden',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2, // Retour à 2 lignes pour optimiser l'espace
+                        WebkitBoxOrient: 'vertical',
+                        mb: 1.5
+                      }}
+                    >
                       {product.name}
                     </Typography>
                     
                     {product.Seller && (
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Typography 
+                        variant="body2" 
+                        color="text.secondary" 
+                        sx={{ 
+                          mb: 1.5, 
+                          fontSize: '0.85rem',
+                          height: '2.0em', // Hauteur réduite
+                          overflow: 'hidden',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 1, // Une seule ligne pour le vendeur
+                          WebkitBoxOrient: 'vertical',
+                          lineHeight: 1.2
+                        }}
+                      >
                         🏪 {product.Seller.sellerInfo?.businessName || `${product.Seller.firstName} ${product.Seller.lastName}`}
                       </Typography>
                     )}
                     
                     {/* Stock indicator */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                       <Inventory2 
                         sx={{ 
                           fontSize: '1rem',
@@ -423,53 +503,12 @@ const ProductCatalog = () => {
                       </Typography>
                     </Box>
                     
-                    {/* Pointures disponibles - affichage informatif */}
-                    {product.ProductVariants && product.ProductVariants.length > 0 && (
-                      <Box sx={{ mb: 2 }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>
-                          Pointures disponibles:
-                        </Typography>
-                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                          {product.ProductVariants
-                            .filter(variant => variant.stock > 0)
-                            .slice(0, 6) // Limiter l'affichage à 6 pointures max
-                            .map(variant => (
-                              <Chip
-                                key={variant.id}
-                                label={variant.size}
-                                size="small"
-                                sx={{
-                                  fontSize: '0.75rem',
-                                  height: '24px',
-                                  backgroundColor: 'grey.100',
-                                  color: 'text.primary',
-                                  '&:hover': {
-                                    backgroundColor: 'primary.light'
-                                  }
-                                }}
-                              />
-                            ))}
-                          {product.ProductVariants.filter(v => v.stock > 0).length > 6 && (
-                            <Chip
-                              label={`+${product.ProductVariants.filter(v => v.stock > 0).length - 6}`}
-                              size="small"
-                              sx={{
-                                fontSize: '0.75rem',
-                                height: '24px',
-                                backgroundColor: 'grey.200',
-                                color: 'text.secondary'
-                              }}
-                            />
-                          )}
-                        </Box>
-                      </Box>
-                    )}
                     
                     <Button 
                       variant="contained" 
                       fullWidth
                       size="large"
-                      disabled={!product.ProductVariants?.some(v => v.stock > 0)}
+                      disabled={stockStatus.status === 'out'}
                       onClick={() => handleAddToCartRequest(product)}
                       startIcon={<ShoppingCart />}
                       sx={{
@@ -501,6 +540,37 @@ const ProductCatalog = () => {
           <Typography variant="body1" color="text.secondary">
             Essayez de modifier vos critères de recherche
           </Typography>
+        </Box>
+      )}
+
+      {/* Interface de pagination */}
+      {!loading && !error && totalPages > 1 && (
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          mt: 6, 
+          mb: 4,
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: 2
+        }}>
+          <Typography variant="body2" color="text.secondary">
+            Page {currentPage} sur {totalPages} • {totalItems} produit{totalItems > 1 ? 's' : ''}
+          </Typography>
+          <Pagination 
+            count={totalPages} 
+            page={currentPage} 
+            onChange={handlePageChange}
+            color="primary"
+            size="large"
+            showFirstButton 
+            showLastButton
+            sx={{
+              '& .MuiPagination-ul': {
+                justifyContent: 'center'
+              }
+            }}
+          />
         </Box>
       )}
 

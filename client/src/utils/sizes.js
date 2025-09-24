@@ -27,8 +27,10 @@ export const isValidSize = (category, size, sizeType = 'EU') => {
   return validSizes.includes(size.toString());
 };
 
-export default {
+const sizeUtils = {
   SIZE_RANGES,
   getSizesForCategory,
   isValidSize
 };
+
+export default sizeUtils;

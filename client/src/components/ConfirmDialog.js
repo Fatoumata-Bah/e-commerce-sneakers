@@ -23,7 +23,13 @@ const ConfirmDialog = ({
   irreversible = false
 }) => {
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth="sm" 
+      fullWidth
+      sx={{ zIndex: (theme) => theme.zIndex.modal + 2 }}
+    >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Warning color={severity} />
         {title}

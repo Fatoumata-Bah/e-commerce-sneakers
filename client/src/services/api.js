@@ -32,7 +32,8 @@ export const cartService = {
   get: () => api.get('/cart'),
   add: (productVariantId, quantity = 1) => api.post('/cart', { productVariantId, quantity }),
   update: (id, quantity) => api.put(`/cart/${id}`, { quantity }),
-  remove: (id) => api.delete(`/cart/${id}`)
+  remove: (id) => api.delete(`/cart/${id}`),
+  clear: () => api.delete('/cart/clear')
 };
 
 export const orderService = {
@@ -40,6 +41,13 @@ export const orderService = {
   getAll: () => api.get('/orders'),
   getById: (id) => api.get(`/orders/${id}`),
   updateStatus: (id, status) => api.put(`/orders/${id}/status`, { status })
+};
+
+export const expiredCartService = {
+  saveExpiredItems: (items) => api.post('/expired-cart/save', { items }),
+  getHistory: (options = {}) => api.get('/expired-cart/history', { params: options }),
+  reorderItem: (expiredItemId, quantity) => 
+    api.post(`/expired-cart/reorder-to-cart/${expiredItemId}`, { quantity })
 };
 
 export default api;

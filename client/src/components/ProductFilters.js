@@ -37,6 +37,7 @@ const ProductFilters = ({
 
   const sortOptions = [
     { value: 'name', label: 'Nom A-Z' },
+    { value: 'name-desc', label: 'Nom Z-A' },
     { value: 'price-asc', label: 'Prix croissant' },
     { value: 'price-desc', label: 'Prix décroissant' },
     { value: 'newest', label: 'Nouveautés' }

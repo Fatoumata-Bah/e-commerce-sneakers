@@ -65,9 +65,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = (onLogoutComplete) => {
     localStorage.removeItem('token');
     setUser(null);
+    // Callback pour redirection après déconnexion
+    if (onLogoutComplete) {
+      onLogoutComplete();
+    }
   };
 
   const isAdmin = () => user?.role === 'admin';

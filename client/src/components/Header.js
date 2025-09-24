@@ -1,17 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppBar, Toolbar, Typography, Button, Menu, MenuItem, Chip, Box, CircularProgress, Badge, IconButton } from '@mui/material';
-import { ShoppingCart, Receipt, AdminPanelSettings } from '@mui/icons-material';
+import { ShoppingCart, Receipt, AdminPanelSettings, History } from '@mui/icons-material';
 import ConfirmDialog from './ConfirmDialog';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
+import { useCartTimer } from '../contexts/CartTimerContext';
 import AuthDialog from './AuthDialog';
+import HeaderCartTimer from './HeaderCartTimer';
 import CartDrawer from './CartDrawer';
 
-const Header = ({ onShowOrders, onShowProducts, onShowAdmin }) => {
+const Header = ({ onShowOrders, onShowProducts, onShowAdmin, onShowExpiredItems, onNavigateHome }) => {
   const { user, logout, loading } = useAuth();
   const { cart } = useCart();
+  const { recoverLostTimer } = useCartTimer();
   const [authOpen, setAuthOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [autoCheckout, setAutoCheckout] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [authMessage, setAuthMessage] = useState(null);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
@@ -25,9 +29,54 @@ const Header = ({ onShowOrders, onShowProducts, onShowAdmin }) => {
   };
 
   const handleLogoutConfirm = () => {
-    logout();
+    logout(() => {
+      // Rediriger vers la page d'accueil après déconnexion
+      if (onNavigateHome) {
+        onNavigateHome();
+      }
+    });
     setConfirmLogoutOpen(false);
   };
+
+  // Écouter l'événement pour ouvrir le panier et déclencher le checkout
+  useEffect(() => {
+    const handleOpenCartAndCheckout = (event) => {
+      console.log('🛒 Événement openCartAndCheckout reçu:', event.detail);
+      setCartOpen(true);
+      setAutoCheckout(true);
+      
+      // Persister l'intention de checkout pour après la connexion
+      localStorage.setItem('pendingCheckout', 'true');
+    };
+
+    window.addEventListener('openCartAndCheckout', handleOpenCartAndCheckout);
+    
+    return () => {
+      window.removeEventListener('openCartAndCheckout', handleOpenCartAndCheckout);
+    };
+  }, []);
+
+  // Vérifier s'il y a un checkout en attente après connexion
+  useEffect(() => {
+    if (user && localStorage.getItem('pendingCheckout') === 'true') {
+      console.log('🔄 Checkout en attente détecté après connexion');
+      localStorage.removeItem('pendingCheckout');
+      
+      // Petit délai pour s'assurer que tout est initialisé
+      setTimeout(() => {
+        // Récupérer le timer perdu
+        recoverLostTimer();
+        
+        setCartOpen(true);
+        setAutoCheckout(true);
+      }, 500);
+    } else if (user) {
+      // Même si pas de checkout en attente, essayer de récupérer un timer perdu
+      setTimeout(() => {
+        recoverLostTimer();
+      }, 1000);
+    }
+  }, [user, recoverLostTimer]);
 
   const getRoleColor = (role) => {
     const colors = { admin: 'error', seller: 'warning', customer: 'info' };
@@ -49,29 +98,38 @@ const Header = ({ onShowOrders, onShowProducts, onShowAdmin }) => {
               flexGrow: 1, 
               cursor: 'pointer',
               fontWeight: 800,
-              background: 'linear-gradient(45deg, #ffffff 30%, #f39c12 90%)',
+              background: 'linear-gradient(45deg, #ffffff 30%, #ffd700 90%)',
               backgroundClip: 'text',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
-              letterSpacing: '-0.5px'
+              letterSpacing: '-0.5px',
+              fontFamily: '"Poppins", "Inter", sans-serif'
             }}
             onClick={onShowProducts}
           >
-            SneakZone
+            👟 SneakersShop
           </Typography>
           
                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                   <IconButton color="inherit" onClick={() => setCartOpen(true)}>
+                   {/* Timer du panier */}
+                   <HeaderCartTimer />
+                   
+                   <IconButton color="inherit" onClick={() => setCartOpen(!cartOpen)}>
                      <Badge badgeContent={cart.count} color="secondary">
                        <ShoppingCart />
                      </Badge>
                    </IconButton>
                    
-                   {user && user.role === 'customer' && (
-                     <IconButton color="inherit" onClick={onShowOrders}>
-                       <Receipt />
-                     </IconButton>
-                   )}
+                  {user && user.role === 'customer' && (
+                    <>
+                      <IconButton color="inherit" onClick={onShowOrders} title="Mes commandes">
+                        <Receipt />
+                      </IconButton>
+                      <IconButton color="inherit" onClick={onShowExpiredItems} title="Articles expirés">
+                        <History />
+                      </IconButton>
+                    </>
+                  )}
                    
                    {user && ['admin', 'seller'].includes(user.role) && (
                      <IconButton color="inherit" onClick={onShowAdmin}>
@@ -114,13 +172,18 @@ const Header = ({ onShowOrders, onShowProducts, onShowAdmin }) => {
       />
       <CartDrawer 
         open={cartOpen} 
-        onClose={() => setCartOpen(false)}
+        onClose={() => {
+          setCartOpen(false);
+          setAutoCheckout(false);
+        }}
         onLoginRequest={() => {
           setCartOpen(false);
           setAuthMessage("Connectez-vous pour finaliser votre commande");
           setAuthOpen(true);
         }}
-             />
+        autoCheckout={autoCheckout}
+        onCheckoutStart={() => setAutoCheckout(false)}
+      />
 
              <ConfirmDialog
                open={confirmLogoutOpen}

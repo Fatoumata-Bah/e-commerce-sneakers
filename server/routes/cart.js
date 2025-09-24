@@ -1,6 +1,7 @@
 const express = require('express');
 const { authenticateToken } = require('../middleware/auth');
 const { CartItem, ProductVariant, Product } = require('../database');
+const StockReservationService = require('../services/stockReservationService');
 const router = express.Router();
 
 router.get('/', authenticateToken, async (req, res) => {
@@ -41,9 +42,12 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Product variant not found' });
     }
 
-    if (variant.stock < quantity) {
+    // Vérifier le stock disponible réel (tenant compte des réservations)
+    const availableStock = await StockReservationService.getAvailableStock(productVariantId);
+    
+    if (availableStock < quantity) {
       return res.status(400).json({ 
-        error: `Stock insuffisant. Stock disponible: ${variant.stock}` 
+        error: `Stock insuffisant. Stock disponible: ${availableStock}` 
       });
     }
 
@@ -51,23 +55,49 @@ router.post('/', authenticateToken, async (req, res) => {
       where: { userId: req.user.id, productVariantId }
     });
 
+    let finalQuantity = quantity;
+    
     if (existingItem) {
       const newQuantity = existingItem.quantity + quantity;
-      if (variant.stock < newQuantity) {
+      // Vérifier le stock disponible réel pour la nouvelle quantité totale
+      if (availableStock < newQuantity - existingItem.quantity) {
         return res.status(400).json({ 
-          error: `Stock insuffisant. Stock disponible: ${variant.stock}` 
+          error: `Stock insuffisant. Stock disponible: ${availableStock}` 
         });
       }
       await existingItem.update({ quantity: newQuantity });
+      finalQuantity = newQuantity;
     } else {
       await CartItem.create({
         userId: req.user.id,
         productVariantId,
         quantity
       });
+      finalQuantity = quantity;
     }
 
-    res.json({ message: 'Item added to cart' });
+    // Réserver le stock pour cet utilisateur (2 minutes pour les tests)
+    const reservationResult = await StockReservationService.reserveStock({
+      userId: req.user.id,
+      sessionId: null,
+      productVariantId,
+      quantity: finalQuantity,
+      durationMinutes: 2 // 2 minutes pour les tests
+    });
+
+    if (reservationResult.success) {
+      res.json({ 
+        message: 'Item added to cart and stock reserved',
+        reservation: reservationResult.reservation
+      });
+    } else {
+      // Si la réservation échoue, on garde quand même l'article dans le panier
+      // mais on avertit l'utilisateur
+      res.json({ 
+        message: 'Item added to cart',
+        warning: 'Stock reservation failed: ' + reservationResult.error
+      });
+    }
   } catch (error) {
     console.error('Add to cart error:', error);
     res.status(500).json({ error: 'Failed to add to cart' });
@@ -102,6 +132,20 @@ router.put('/:id', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Update cart error:', error);
     res.status(500).json({ error: 'Failed to update cart' });
+  }
+});
+
+// Route pour vider complètement le panier (AVANT /:id pour éviter les conflits)
+router.delete('/clear', authenticateToken, async (req, res) => {
+  try {
+    await CartItem.destroy({
+      where: { userId: req.user.id }
+    });
+
+    res.json({ message: 'Cart cleared successfully' });
+  } catch (error) {
+    console.error('Clear cart error:', error);
+    res.status(500).json({ error: 'Failed to clear cart' });
   }
 });
 
