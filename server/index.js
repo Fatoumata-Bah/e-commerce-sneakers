@@ -9,8 +9,11 @@ const { testConnection } = require('./database');
 const app = express();
 
 app.use(helmet());
+
+const allowedOrigin = process.env.CLIENT_URL || 'http://localhost:3000';
+
 app.use(cors({
-  origin: ['http://localhost:3000'],
+  origin: allowedOrigin,
   credentials: true
 }));
 
